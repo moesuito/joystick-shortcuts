@@ -22,12 +22,12 @@ MEDIA_MAP = {
 }
 
 MEDIA_LABELS = {
-    "volume_up": "Aumentar volume",
-    "volume_down": "Diminuir volume",
-    "mute": "Mudo",
+    "volume_up": "Volume up",
+    "volume_down": "Volume down",
+    "mute": "Mute",
     "play_pause": "Play / Pause",
-    "next": "Próxima faixa",
-    "prev": "Faixa anterior",
+    "next": "Next track",
+    "prev": "Previous track",
 }
 
 

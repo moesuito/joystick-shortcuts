@@ -1,20 +1,28 @@
 # Joystick Shortcuts
 
-App utilitário pra Windows que transforma botões de um controle XInput (Xbox / 8BitDo / GameSir / Razer / paddles do Elite, etc.) em atalhos globais de teclado, comandos de mídia e launchers de aplicativo. Roda em background no system tray e tem opção de prioridade alta pra continuar respondendo enquanto um jogo está rodando em primeiro plano.
+A Windows utility that maps **XInput controller** buttons (Xbox / 8BitDo / GameSir / Razer / Xbox Elite paddles, etc.) to **global keyboard shortcuts**, **media controls**, and **app launchers**. Runs in the system tray and pins itself to **HIGH process priority** so bindings keep firing even while a fullscreen game is hammering the CPU.
 
-## Recursos
+## Features
 
-- Quantos atalhos quiser, organizados em **perfis** alternáveis pelo tray ou pela GUI
-- Cada atalho dispara: **tecla única**, **combinação com modificadores** (Ctrl / Shift / Alt / Win), **ações de mídia/volume**, ou **lança um app/URL**
-- Modos de disparo: ao pressionar, ao soltar, ou ao segurar por X ms
-- **Prioridade alta** automática (`HIGH_PRIORITY_CLASS`) — aparece como "Alta" no Task Manager
-- **Auto-start** com Windows (HKCU Run key)
-- **Minimiza pro tray** ao iniciar
-- Botão de **pausa global** pra desligar todos os atalhos sem fechar o app
+- Unlimited named shortcuts, organized in **switchable profiles** (toggle from the GUI or the tray menu)
+- Action types per binding:
+  - **Single key** (F1, Print Screen, Insert, …)
+  - **Modifier combos** (Ctrl / Shift / Alt / Win + key)
+  - **Media & volume** (volume up/down, mute, play/pause, next/prev track)
+  - **Launch app or URL** (any `.exe` with optional args, or `http(s)://…`)
+- Three trigger modes per binding: **on press**, **on release**, **on hold** (configurable hold time in ms)
+- **HIGH priority class** automatic on launch — appears as "High" in Task Manager
+- **Auto-start with Windows** (HKCU `Run` registry key)
+- **Start minimized to tray** option
+- Global **pause toggle** — disable all shortcuts without quitting
 
-Botões suportados: `A`, `B`, `X`, `Y`, `LB`, `RB`, `LT`, `RT`, `BACK`, `START`, `LS` (clique), `RS` (clique), e DPad (`UP`/`DOWN`/`LEFT`/`RIGHT`).
+Supported buttons: `A`, `B`, `X`, `Y`, `LB`, `RB`, `LT`, `RT`, `BACK`, `START`, `LS` (click), `RS` (click), and the D-Pad (`UP` / `DOWN` / `LEFT` / `RIGHT`).
 
-## Rodando do código (dev)
+## Install
+
+Grab the latest **`JoystickShortcuts.exe`** from [Releases](https://github.com/moesuito/joystick-shortcuts/releases). Single file, no installer, no Python runtime required. Double-click and the icon appears in the system tray.
+
+## Run from source
 
 ```powershell
 python -m venv .venv
@@ -23,38 +31,44 @@ pip install -r requirements.txt
 python main.py
 ```
 
-A primeira execução cria `%APPDATA%\JoystickShortcuts\config.json` com um perfil "Default" vazio. Clique em **+ Adicionar atalho** pra começar.
+The first launch creates `%APPDATA%\JoystickShortcuts\config.json` with an empty "Default" profile. Click **+ Add shortcut** to start binding.
 
-## Empacotando como `.exe`
+Requires **Python 3.11+** on Windows.
+
+## Build a `.exe`
 
 ```powershell
 .\build.ps1
 ```
 
-Gera `dist\JoystickShortcuts.exe` (single-file, sem console). Coloque onde quiser e marque "Iniciar com Windows" na GUI — o registry vai apontar pro caminho atual do `.exe`.
+Produces `dist\JoystickShortcuts.exe` — a single-file, console-less executable. Drop it anywhere on disk and tick **Start with Windows** in the GUI; the registry entry will point to that path.
 
 ## Caveats
 
-- **Steam Input / Xbox Game Bar**: o XInput é leitura compartilhada, então o polling não conflita. Mas se o Steam estiver remapeando o controle pra teclado, os dois sistemas podem disparar a mesma ação. Se isso acontecer, desabilite Steam Input pro jogo em questão.
-- **Botão Guide / Xbox**: não exposto pelo XInput público; não dá pra capturar.
-- **Controles aftermarket com botões "extras"**: a maioria mapeia os paddles/macros pra inputs XInput existentes via firmware ou app companion. Configure o controle pra mapear o paddle traseiro pra `LB`, `RB` ou outro botão livre, e bind aqui no Joystick Shortcuts.
-- **`keyboard` lib**: não precisa de admin pra `keyboard.send()`. Não capturamos teclas globalmente — a captura de tecla acontece só no diálogo de edição que está em foco.
+- **Steam Input / Xbox Game Bar**: XInput is shared-read, so this app's polling does not conflict with games. However, if Steam is remapping your controller to keyboard inputs, both Steam and this app may fire the same action. Disable Steam Input for the affected game if that happens.
+- **Guide / Xbox button**: not exposed by the public XInput API; it cannot be bound.
+- **Aftermarket controllers with extra buttons**: most paddles/macros (8BitDo Pro 2, Xbox Elite paddles, GameSir, Razer Wolverine, etc.) map their extra buttons onto existing XInput inputs via firmware or a companion app. Configure your back paddle to send, for example, `LB` or `RB`, and bind that here.
+- **The `keyboard` library** does not require admin privileges for `keyboard.send()`. We do not hook keyboard events globally — key capture only happens inside the (focused) edit dialog.
 
-## Estrutura do projeto
+## Project layout
 
 ```
 main.py                       entry point: priority bump → tray + GUI
 app/
 ├─ models.py                  dataclasses (Action, Binding, Profile, AppConfig)
-├─ profile_manager.py         load/save JSON em %APPDATA%
-├─ xinput_poller.py           QThread polling 120Hz com edge detection
-├─ actions.py                 executor (key/combo/media/launch) + Dispatcher
+├─ profile_manager.py         load/save JSON in %APPDATA%
+├─ xinput_poller.py           QThread polling at 120Hz with edge detection
+├─ actions.py                 executor (key / combo / media / launch) + Dispatcher
 ├─ system/
 │  ├─ priority.py             SetPriorityClass via ctypes
 │  └─ autostart.py            HKCU Run key
 └─ gui/
-   ├─ main_window.py          janela principal, tabela, perfis, settings
-   ├─ binding_dialog.py       diálogo de criar/editar atalho
-   ├─ capture_widgets.py      captura de botão e tecla
-   └─ tray.py                 ícone do system tray
+   ├─ main_window.py          main window: profile selector, table, settings
+   ├─ binding_dialog.py       create / edit a single binding
+   ├─ capture_widgets.py      controller-button + key-combo capture widgets
+   └─ tray.py                 system tray icon + menu
 ```
+
+## License
+
+[Apache License 2.0](LICENSE) — © 2026 João Alano.

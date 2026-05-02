@@ -65,7 +65,7 @@ def main() -> int:
         QMessageBox.critical(
             None,
             APP_DISPLAY_NAME,
-            "Bandeja do sistema não disponível neste ambiente.",
+            "System tray is not available in this environment.",
         )
         return 1
 
@@ -126,7 +126,7 @@ def main() -> int:
             window.sync_active_profile()
             tray.refresh()
             save_config(config)
-            tray.notify(APP_DISPLAY_NAME, f"Perfil ativo: {name}")
+            tray.notify(APP_DISPLAY_NAME, f"Active profile: {name}")
 
     def on_window_pause(checked: bool) -> None:
         tray.refresh()

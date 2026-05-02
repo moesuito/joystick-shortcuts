@@ -30,16 +30,16 @@ from .binding_dialog import BindingDialog
 
 
 TRIGGER_LABELS = {
-    "press": "Ao pressionar",
-    "release": "Ao soltar",
-    "hold": "Ao segurar",
+    "press": "On press",
+    "release": "On release",
+    "hold": "On hold",
 }
 
 ACTION_TYPE_LABELS = {
-    "key": "Tecla",
+    "key": "Key",
     "key_combo": "Combo",
-    "media": "Mídia",
-    "launch": "Lançar",
+    "media": "Media",
+    "launch": "Launch",
 }
 
 
@@ -84,21 +84,21 @@ class MainWindow(QMainWindow):
 
         # Top bar: profile selector
         top = QHBoxLayout()
-        top.addWidget(QLabel("Perfil:"))
+        top.addWidget(QLabel("Profile:"))
         self.profile_combo = QComboBox()
         self.profile_combo.setMinimumWidth(200)
         self.profile_combo.currentTextChanged.connect(self._on_profile_changed)
         top.addWidget(self.profile_combo)
 
-        self.btn_new_profile = QPushButton("Novo")
+        self.btn_new_profile = QPushButton("New")
         self.btn_new_profile.clicked.connect(self._on_new_profile)
         top.addWidget(self.btn_new_profile)
 
-        self.btn_rename_profile = QPushButton("Renomear")
+        self.btn_rename_profile = QPushButton("Rename")
         self.btn_rename_profile.clicked.connect(self._on_rename_profile)
         top.addWidget(self.btn_rename_profile)
 
-        self.btn_delete_profile = QPushButton("Excluir")
+        self.btn_delete_profile = QPushButton("Delete")
         self.btn_delete_profile.clicked.connect(self._on_delete_profile)
         top.addWidget(self.btn_delete_profile)
 
@@ -113,7 +113,7 @@ class MainWindow(QMainWindow):
         # Bindings table
         self.table = QTableWidget(0, 6)
         self.table.setHorizontalHeaderLabels(
-            ["Nome", "Botão", "Tipo", "Ação", "Disparo", ""]
+            ["Name", "Button", "Type", "Action", "Trigger", ""]
         )
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -131,15 +131,15 @@ class MainWindow(QMainWindow):
 
         # Action row under the table
         actions_row = QHBoxLayout()
-        self.btn_add = QPushButton("+ Adicionar atalho")
+        self.btn_add = QPushButton("+ Add shortcut")
         self.btn_add.clicked.connect(self._on_add)
         actions_row.addWidget(self.btn_add)
 
-        self.btn_edit = QPushButton("Editar")
+        self.btn_edit = QPushButton("Edit")
         self.btn_edit.clicked.connect(self._on_edit_selected)
         actions_row.addWidget(self.btn_edit)
 
-        self.btn_delete = QPushButton("Excluir")
+        self.btn_delete = QPushButton("Delete")
         self.btn_delete.clicked.connect(self._on_delete_selected)
         actions_row.addWidget(self.btn_delete)
 
@@ -156,17 +156,17 @@ class MainWindow(QMainWindow):
 
         # Settings strip
         settings = QHBoxLayout()
-        self.chk_autostart = QCheckBox("Iniciar com Windows")
+        self.chk_autostart = QCheckBox("Start with Windows")
         self.chk_autostart.setChecked(self._config.autostart)
         self.chk_autostart.toggled.connect(self._on_autostart_toggled)
         settings.addWidget(self.chk_autostart)
 
-        self.chk_high_priority = QCheckBox("Prioridade alta")
+        self.chk_high_priority = QCheckBox("High priority")
         self.chk_high_priority.setChecked(self._config.high_priority)
         self.chk_high_priority.toggled.connect(self._on_priority_toggled)
         settings.addWidget(self.chk_high_priority)
 
-        self.chk_minimize = QCheckBox("Iniciar minimizado")
+        self.chk_minimize = QCheckBox("Start minimized")
         self.chk_minimize.setChecked(self._config.minimize_to_tray_on_start)
         self.chk_minimize.toggled.connect(self._on_minimize_toggled)
         settings.addWidget(self.chk_minimize)
@@ -195,10 +195,10 @@ class MainWindow(QMainWindow):
 
     def _refresh_status(self) -> None:
         if self._connected:
-            self.status_label.setText("● Controle conectado")
+            self.status_label.setText("● Controller connected")
             self.status_label.setStyleSheet("color: #4caf50;")
         else:
-            self.status_label.setText("○ Aguardando controle…")
+            self.status_label.setText("○ Waiting for controller…")
             self.status_label.setStyleSheet("color: #888;")
 
     # ---- Profile handlers --------------------------------------------------
@@ -223,12 +223,12 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def _on_new_profile(self) -> None:
-        name, ok = QInputDialog.getText(self, "Novo perfil", "Nome do perfil:")
+        name, ok = QInputDialog.getText(self, "New profile", "Profile name:")
         name = name.strip()
         if not ok or not name:
             return
         if name in self._config.profiles:
-            QMessageBox.warning(self, "Perfil existente", f"Já existe um perfil chamado '{name}'.")
+            QMessageBox.warning(self, "Profile exists", f"A profile named '{name}' already exists.")
             return
         self._config.profiles[name] = Profile(name=name)
         self._config.active_profile = name
@@ -241,12 +241,12 @@ class MainWindow(QMainWindow):
         old = self._config.active_profile
         if not old:
             return
-        new, ok = QInputDialog.getText(self, "Renomear perfil", "Novo nome:", text=old)
+        new, ok = QInputDialog.getText(self, "Rename profile", "New name:", text=old)
         new = new.strip()
         if not ok or not new or new == old:
             return
         if new in self._config.profiles:
-            QMessageBox.warning(self, "Perfil existente", f"Já existe um perfil chamado '{new}'.")
+            QMessageBox.warning(self, "Profile exists", f"A profile named '{new}' already exists.")
             return
         # Rebuild dict preserving insertion order, swapping the renamed key.
         rebuilt: dict = {}
@@ -265,14 +265,14 @@ class MainWindow(QMainWindow):
     def _on_delete_profile(self) -> None:
         if len(self._config.profiles) <= 1:
             QMessageBox.information(
-                self, "Não permitido", "Você precisa ter pelo menos um perfil."
+                self, "Not allowed", "You must keep at least one profile."
             )
             return
         name = self._config.active_profile
         confirm = QMessageBox.question(
             self,
-            "Excluir perfil",
-            f"Excluir o perfil '{name}' e todos os seus atalhos?",
+            "Delete profile",
+            f"Delete profile '{name}' and all its shortcuts?",
         )
         if confirm != QMessageBox.StandardButton.Yes:
             return
@@ -355,8 +355,8 @@ class MainWindow(QMainWindow):
             return
         confirm = QMessageBox.question(
             self,
-            "Excluir atalho",
-            f"Excluir o atalho '{b.name}'?",
+            "Delete shortcut",
+            f"Delete shortcut '{b.name}'?",
         )
         if confirm != QMessageBox.StandardButton.Yes:
             return
@@ -369,9 +369,9 @@ class MainWindow(QMainWindow):
 
     def _render_pause_button(self) -> None:
         if self._config.paused:
-            self.btn_pause.setText("▶ Retomar atalhos")
+            self.btn_pause.setText("▶ Resume shortcuts")
         else:
-            self.btn_pause.setText("⏸ Pausar atalhos")
+            self.btn_pause.setText("⏸ Pause shortcuts")
 
     @Slot(bool)
     def _on_pause_toggled(self, checked: bool) -> None:
@@ -388,7 +388,7 @@ class MainWindow(QMainWindow):
 
             autostart.set_enabled(checked)
         except Exception as exc:
-            QMessageBox.warning(self, "Autostart", f"Falha ao alterar autostart: {exc}")
+            QMessageBox.warning(self, "Autostart", f"Failed to update autostart: {exc}")
         self._save()
 
     @Slot(bool)

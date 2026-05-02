@@ -24,25 +24,25 @@ from .capture_widgets import ButtonCaptureButton, KeyComboLineEdit
 
 
 ACTION_TYPES = [
-    ("key", "Tecla única"),
-    ("key_combo", "Combinação (Ctrl/Shift/Alt/Win)"),
-    ("media", "Mídia & Volume"),
-    ("launch", "Lançar aplicativo / abrir URL"),
+    ("key", "Single key"),
+    ("key_combo", "Combo (Ctrl/Shift/Alt/Win)"),
+    ("media", "Media & Volume"),
+    ("launch", "Launch app / open URL"),
 ]
 
 TRIGGER_MODES = [
-    ("press", "Ao pressionar"),
-    ("release", "Ao soltar"),
-    ("hold", "Ao segurar"),
+    ("press", "On press"),
+    ("release", "On release"),
+    ("hold", "On hold"),
 ]
 
 MEDIA_OPTIONS = [
-    ("volume_up", "Aumentar volume"),
-    ("volume_down", "Diminuir volume"),
-    ("mute", "Mudo (toggle)"),
+    ("volume_up", "Volume up"),
+    ("volume_down", "Volume down"),
+    ("mute", "Mute (toggle)"),
     ("play_pause", "Play / Pause"),
-    ("next", "Próxima faixa"),
-    ("prev", "Faixa anterior"),
+    ("next", "Next track"),
+    ("prev", "Previous track"),
 ]
 
 
@@ -56,7 +56,7 @@ class BindingDialog(QDialog):
         super().__init__(parent)
         self._poller = poller
         self._original = binding
-        self.setWindowTitle("Editar atalho" if binding else "Novo atalho")
+        self.setWindowTitle("Edit shortcut" if binding else "New shortcut")
         self.setModal(True)
         self.setMinimumWidth(480)
 
@@ -76,17 +76,17 @@ class BindingDialog(QDialog):
         form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
 
         self.name_edit = QLineEdit()
-        self.name_edit.setPlaceholderText("Ex: Print + Recortar")
-        form.addRow("Nome:", self.name_edit)
+        self.name_edit.setPlaceholderText("e.g. Screenshot snip")
+        form.addRow("Name:", self.name_edit)
 
         self.button_capture = ButtonCaptureButton()
-        form.addRow("Botão:", self.button_capture)
+        form.addRow("Button:", self.button_capture)
 
         self.action_type = QComboBox()
         for value, label in ACTION_TYPES:
             self.action_type.addItem(label, value)
         self.action_type.currentIndexChanged.connect(self._on_action_type_changed)
-        form.addRow("Ação:", self.action_type)
+        form.addRow("Action:", self.action_type)
 
         # Stacked panels per action type.
         self.action_stack = QStackedWidget()
@@ -109,15 +109,15 @@ class BindingDialog(QDialog):
         self.hold_spin.setSuffix(" ms")
         self.hold_spin.setEnabled(False)
         trigger_row.addWidget(self.trigger_combo, 1)
-        trigger_row.addWidget(QLabel("Tempo:"))
+        trigger_row.addWidget(QLabel("Hold time:"))
         trigger_row.addWidget(self.hold_spin)
-        form.addRow("Disparo:", trigger_row)
+        form.addRow("Trigger:", trigger_row)
 
         root.addLayout(form)
 
         hint = QLabel(
-            "Dica: enquanto este diálogo está aberto, os atalhos ficam pausados pra não dispararem"
-            " ações enquanto você captura botões/teclas."
+            "Tip: shortcuts are paused while this dialog is open so they don't fire"
+            " while you're capturing buttons/keys."
         )
         hint.setWordWrap(True)
         hint.setStyleSheet("color: #888;")
@@ -135,7 +135,7 @@ class BindingDialog(QDialog):
         lay = QHBoxLayout(w)
         lay.setContentsMargins(0, 0, 0, 0)
         self.key_single = KeyComboLineEdit(allow_modifiers=False)
-        self.key_single.setPlaceholderText("Clique aqui e pressione a tecla")
+        self.key_single.setPlaceholderText("Click here and press a key")
         lay.addWidget(self.key_single)
         return w
 
@@ -144,7 +144,7 @@ class BindingDialog(QDialog):
         lay = QHBoxLayout(w)
         lay.setContentsMargins(0, 0, 0, 0)
         self.key_combo = KeyComboLineEdit(allow_modifiers=True)
-        self.key_combo.setPlaceholderText("Clique aqui e pressione a combinação")
+        self.key_combo.setPlaceholderText("Click here and press a combination")
         lay.addWidget(self.key_combo)
         return w
 
@@ -166,16 +166,16 @@ class BindingDialog(QDialog):
         target_row = QHBoxLayout()
         self.launch_target = QLineEdit()
         self.launch_target.setPlaceholderText(
-            r"C:\caminho\para\app.exe   ou   https://exemplo.com"
+            r"C:\path\to\app.exe   or   https://example.com"
         )
-        browse = QPushButton("Procurar…")
+        browse = QPushButton("Browse…")
         browse.clicked.connect(self._browse_target)
         target_row.addWidget(self.launch_target, 1)
         target_row.addWidget(browse)
         lay.addLayout(target_row)
 
         self.launch_args = QLineEdit()
-        self.launch_args.setPlaceholderText("Argumentos opcionais")
+        self.launch_args.setPlaceholderText("Optional arguments")
         lay.addWidget(self.launch_args)
 
         return w
@@ -183,7 +183,7 @@ class BindingDialog(QDialog):
     # ---- Slots / handlers --------------------------------------------------
 
     def _browse_target(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "Escolher executável")
+        path, _ = QFileDialog.getOpenFileName(self, "Choose executable")
         if path:
             self.launch_target.setText(path)
 
@@ -264,15 +264,15 @@ class BindingDialog(QDialog):
 
         name = self.name_edit.text().strip()
         if not name:
-            QMessageBox.warning(self, "Nome obrigatório", "Dê um nome pro atalho.")
+            QMessageBox.warning(self, "Name required", "Please give the shortcut a name.")
             return
         if not self.button_capture.captured():
-            QMessageBox.warning(self, "Botão obrigatório", "Capture um botão do controle.")
+            QMessageBox.warning(self, "Button required", "Capture a controller button.")
             return
         action = self._build_action()
         if action is None:
             QMessageBox.warning(
-                self, "Ação incompleta", "Preencha a ação (tecla, combinação, mídia ou alvo)."
+                self, "Incomplete action", "Fill in the action (key, combo, media, or target)."
             )
             return
         self.accept()

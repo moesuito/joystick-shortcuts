@@ -31,25 +31,25 @@ class TrayIcon(QObject):
     def _build_menu(self) -> None:
         self._menu = QMenu()
 
-        open_action = QAction("Abrir", self._menu)
+        open_action = QAction("Open", self._menu)
         open_action.triggered.connect(self.open_requested.emit)
         self._menu.addAction(open_action)
 
         # Profile submenu
-        self._profile_menu = self._menu.addMenu("Perfil")
+        self._profile_menu = self._menu.addMenu("Profile")
         self._profile_group = QActionGroup(self._menu)
         self._profile_group.setExclusive(True)
         self._refresh_profile_menu()
 
         # Pause toggle
-        self._pause_action = QAction("Pausar atalhos", self._menu, checkable=True)
+        self._pause_action = QAction("Pause shortcuts", self._menu, checkable=True)
         self._pause_action.setChecked(self._config.paused)
         self._pause_action.toggled.connect(self.pause_toggled.emit)
         self._menu.addAction(self._pause_action)
 
         self._menu.addSeparator()
 
-        quit_action = QAction("Sair", self._menu)
+        quit_action = QAction("Quit", self._menu)
         quit_action.triggered.connect(self.quit_requested.emit)
         self._menu.addAction(quit_action)
 
@@ -72,7 +72,7 @@ class TrayIcon(QObject):
         self._refresh_profile_menu()
         self._pause_action.blockSignals(True)
         self._pause_action.setChecked(self._config.paused)
-        self._pause_action.setText("Retomar atalhos" if self._config.paused else "Pausar atalhos")
+        self._pause_action.setText("Resume shortcuts" if self._config.paused else "Pause shortcuts")
         self._pause_action.blockSignals(False)
 
     def notify(self, title: str, message: str) -> None:

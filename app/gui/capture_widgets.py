@@ -110,11 +110,11 @@ class ButtonCaptureButton(QPushButton):
 
     def _render(self) -> None:
         if self._capturing:
-            self.setText("Pressione um botão do controle… (clique para cancelar)")
+            self.setText("Press a controller button… (click to cancel)")
         elif self._captured:
-            self.setText(f"Botão: {self._captured}   (clique para trocar)")
+            self.setText(f"Button: {self._captured}   (click to change)")
         else:
-            self.setText("Capturar botão do controle")
+            self.setText("Capture controller button")
 
 
 class KeyComboLineEdit(QLineEdit):
@@ -131,7 +131,7 @@ class KeyComboLineEdit(QLineEdit):
         self._allow_modifiers = allow_modifiers
         self._keys: list[str] = []
         self.setReadOnly(True)
-        self.setPlaceholderText("Clique e pressione a combinação de teclas")
+        self.setPlaceholderText("Click and press the key combination")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
     def keys(self) -> list[str]:
