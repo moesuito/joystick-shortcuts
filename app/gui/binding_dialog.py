@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..models import Action, Binding
+from ..models import Action, Binding, XINPUT_BUTTONS
 from ..xinput_poller import XInputPoller
 from .capture_widgets import ButtonCaptureButton, KeyComboLineEdit
 
@@ -78,6 +78,15 @@ class BindingDialog(QDialog):
         self.name_edit = QLineEdit()
         self.name_edit.setPlaceholderText("e.g. Screenshot snip")
         form.addRow("Name:", self.name_edit)
+
+        # Optional modifier (chord). Defaults to no modifier; selecting GUIDE
+        # makes this binding fire only when the Xbox button is held.
+        self.modifier_combo = QComboBox()
+        self.modifier_combo.addItem("(none — single-button)", None)
+        for btn in XINPUT_BUTTONS:
+            self.modifier_combo.addItem(btn, btn)
+        self.modifier_combo.currentIndexChanged.connect(self._on_modifier_changed)
+        form.addRow("Hold modifier:", self.modifier_combo)
 
         self.button_capture = ButtonCaptureButton()
         form.addRow("Button:", self.button_capture)
@@ -196,6 +205,19 @@ class BindingDialog(QDialog):
         mode = self.trigger_combo.itemData(index)
         self.hold_spin.setEnabled(mode == "hold")
 
+    @Slot(int)
+    def _on_modifier_changed(self, index: int) -> None:
+        # Chord bindings always fire on press of the secondary button while the
+        # modifier is held — disable the trigger picker to avoid silent surprises.
+        is_chord = self.modifier_combo.itemData(index) is not None
+        if is_chord:
+            for i in range(self.trigger_combo.count()):
+                if self.trigger_combo.itemData(i) == "press":
+                    self.trigger_combo.setCurrentIndex(i)
+                    break
+        self.trigger_combo.setEnabled(not is_chord)
+        self.hold_spin.setEnabled(not is_chord and self.trigger_combo.currentData() == "hold")
+
     @Slot(str)
     def _on_controller_pressed(self, button: str) -> None:
         if self.button_capture.is_capturing():
@@ -206,6 +228,14 @@ class BindingDialog(QDialog):
     def _load(self, b: Binding) -> None:
         self.name_edit.setText(b.name)
         self.button_capture.set_button(b.button)
+        # Modifier
+        target_index = 0
+        if b.modifier:
+            for i in range(self.modifier_combo.count()):
+                if self.modifier_combo.itemData(i) == b.modifier:
+                    target_index = i
+                    break
+        self.modifier_combo.setCurrentIndex(target_index)
         # Action type
         for i in range(self.action_type.count()):
             if self.action_type.itemData(i) == b.action.type:
@@ -266,8 +296,25 @@ class BindingDialog(QDialog):
         if not name:
             QMessageBox.warning(self, "Name required", "Please give the shortcut a name.")
             return
-        if not self.button_capture.captured():
+        button = self.button_capture.captured()
+        if not button:
             QMessageBox.warning(self, "Button required", "Capture a controller button.")
+            return
+        modifier = self.modifier_combo.currentData()
+        if modifier and modifier == button:
+            QMessageBox.warning(
+                self,
+                "Invalid chord",
+                "The modifier and the trigger button must be different.",
+            )
+            return
+        if modifier == "GUIDE" and not self._poller.supports_guide:
+            QMessageBox.warning(
+                self,
+                "Guide button unavailable",
+                "Your XInput runtime does not expose the Xbox/Guide button "
+                "(XInputGetStateEx not found). Pick a different modifier.",
+            )
             return
         action = self._build_action()
         if action is None:
@@ -280,12 +327,14 @@ class BindingDialog(QDialog):
     def build_binding(self) -> Binding:
         action = self._build_action()
         assert action is not None  # guarded by _on_accept
+        modifier = self.modifier_combo.currentData()
         kwargs: dict = dict(
             name=self.name_edit.text().strip(),
             button=self.button_capture.captured() or "A",
             action=action,
-            trigger=self.trigger_combo.currentData(),
+            trigger="press" if modifier else self.trigger_combo.currentData(),
             hold_ms=self.hold_spin.value(),
+            modifier=modifier,
         )
         if self._original is not None:
             kwargs["id"] = self._original.id

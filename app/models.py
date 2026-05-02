@@ -13,6 +13,7 @@ XINPUT_BUTTONS = [
     "BACK", "START",
     "LS", "RS",
     "DPAD_UP", "DPAD_DOWN", "DPAD_LEFT", "DPAD_RIGHT",
+    "GUIDE",  # Xbox button — only emitted if XInputGetStateEx is available.
 ]
 
 ActionType = Literal["key", "key_combo", "media", "launch"]
@@ -39,7 +40,12 @@ class Binding:
     action: Action
     trigger: TriggerMode = "press"
     hold_ms: int = 500
+    modifier: str | None = None  # if set, only fires when this button is also held
     id: str = field(default_factory=lambda: uuid.uuid4().hex)
+
+    @property
+    def is_chord(self) -> bool:
+        return self.modifier is not None
 
     def to_dict(self) -> dict:
         return {
@@ -48,6 +54,7 @@ class Binding:
             "button": self.button,
             "trigger": self.trigger,
             "hold_ms": self.hold_ms,
+            "modifier": self.modifier,
             "action": self.action.to_dict(),
         }
 
@@ -59,6 +66,7 @@ class Binding:
             button=data["button"],
             trigger=data.get("trigger", "press"),
             hold_ms=int(data.get("hold_ms", 500)),
+            modifier=data.get("modifier"),
             action=Action.from_dict(data["action"]),
         )
 

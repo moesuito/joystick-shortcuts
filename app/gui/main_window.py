@@ -289,12 +289,16 @@ class MainWindow(QMainWindow):
         self.table.setRowCount(len(bindings))
         for row, b in enumerate(bindings):
             self.table.setItem(row, 0, QTableWidgetItem(b.name))
-            self.table.setItem(row, 1, QTableWidgetItem(b.button))
+            button_label = f"{b.modifier} + {b.button}" if b.modifier else b.button
+            self.table.setItem(row, 1, QTableWidgetItem(button_label))
             self.table.setItem(row, 2, QTableWidgetItem(ACTION_TYPE_LABELS.get(b.action.type, b.action.type)))
             self.table.setItem(row, 3, QTableWidgetItem(describe_action(b.action)))
-            trig = TRIGGER_LABELS.get(b.trigger, b.trigger)
-            if b.trigger == "hold":
-                trig = f"{trig} ({b.hold_ms} ms)"
+            if b.modifier:
+                trig = "Chord"
+            else:
+                trig = TRIGGER_LABELS.get(b.trigger, b.trigger)
+                if b.trigger == "hold":
+                    trig = f"{trig} ({b.hold_ms} ms)"
             self.table.setItem(row, 4, QTableWidgetItem(trig))
             # Store id in the first column item for later lookup.
             self.table.item(row, 0).setData(Qt.ItemDataRole.UserRole, b.id)

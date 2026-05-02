@@ -98,11 +98,13 @@ class Dispatcher(QObject):
         super().__init__(parent)
         self._config = config
         self._hold_timers: dict[str, QTimer] = {}
+        self._held: set[str] = set()
         self._executor: Callable[[Action], None] = execute_action
 
     def set_config(self, config: AppConfig) -> None:
         self._config = config
         self.cancel_all_holds()
+        self._held.clear()
 
     def set_executor(self, fn: Callable[[Action], None]) -> None:
         """Override action execution (used by the binding dialog to capture buttons silently)."""
@@ -118,10 +120,19 @@ class Dispatcher(QObject):
 
     @Slot(str)
     def on_pressed(self, button: str) -> None:
+        self._held.add(button)
         if self._config.paused:
             return
         for b in self._config.active().bindings:
             if b.button != button:
+                continue
+            if b.modifier:
+                # Chord binding: only fire if the modifier button is currently held.
+                if b.modifier not in self._held:
+                    continue
+                # Chord bindings always fire on press (release/hold are intentionally
+                # not supported — keeps semantics predictable while a modifier is held).
+                self._executor(b.action)
                 continue
             if b.trigger == "press":
                 self._executor(b.action)
@@ -137,6 +148,7 @@ class Dispatcher(QObject):
 
     @Slot(str)
     def on_released(self, button: str) -> None:
+        self._held.discard(button)
         # Cancel any pending hold timers for this button regardless of paused state.
         for key in list(self._hold_timers):
             if key.startswith(f"{button}:"):
@@ -145,7 +157,7 @@ class Dispatcher(QObject):
         if self._config.paused:
             return
         for b in self._config.active().bindings:
-            if b.button == button and b.trigger == "release":
+            if b.button == button and not b.modifier and b.trigger == "release":
                 self._executor(b.action)
 
     def _fire_hold(self, key: str, action: Action) -> None:
